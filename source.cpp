@@ -2,6 +2,8 @@
 
 //Original timing = 81615ms
 //Split up time = 20778ms
+//Threaded Time (using 4 Threads) = 5819ms
+//Threaded Time (using 12 Threads) = 2863ms
 
 #include <chrono>
 #include <cstdint>
@@ -12,6 +14,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <atomic>
 
 //Import things we need from the standard library
 
@@ -41,7 +44,7 @@ const int MAX_ITERATIONS = 500;
 
 // The image data.
 // Each pixel is represented as 0xRRGGBB.
-uint32_t image[HEIGHT][WIDTH];
+std::atomic <uint32_t> image[HEIGHT][WIDTH];
 
 int firstColour = 0;
 int secondColour = 0;
@@ -50,6 +53,8 @@ int i = 0;
 int sectionSize = 0;
 int threadID = 0;
 int threadNumber = 0;
+
+vector<thread> threadPool;
 
 // Write the image to a TGA file with the given name.
 // Format specification: http://www.gamers.org/dEngine/quake3/TGA.txt
@@ -138,8 +143,6 @@ void compute_mandelbrot(double left, double right, double top, double bottom, in
 			}
 		}
 	}
-
-	return;
 }
 
 int main(int argc, char* argv[])
@@ -203,18 +206,36 @@ int main(int argc, char* argv[])
 
 //	}
 
+	//create threads dependant on user's desired max threads.
 	for (i = 0; i < NUM_THREADS; i++)
 	{
 		cout << "Creating thread: " << i << endl;
 		threadID = i;
 
-		compute_mandelbrot(-2.0, 1.0, 1.125, -1.125, threadID);
-		//th[i].compute_mandelbrot
+		//weird error with void (<function style cast>)
+		threadPool.push_back(thread(compute_mandelbrot, -2.0, 1.0, 1.125, -1.125, threadID));
+
+		//threadPool.push_back(thread(fileWriteThread, "output.tga"));
 	}
 
-	thread writeToFile(fileWriteThread, "output.tga");
+	//for (i = 0; i < threadPool.size; i++)
+	//{
+	//	threadPool[i].join();
+	//}
 
-	writeToFile.join();
+
+	for (std::thread& thread : threadPool)
+	{
+		//while (thread.joinable())
+		//{
+			thread.join();
+		//}
+	}
+
+	//thread writeToFile(fileWriteThread, "output.tga");
+
+	//writeToFile.join();
+
 	// Stop timing
 	the_clock::time_point end = the_clock::now();
 
