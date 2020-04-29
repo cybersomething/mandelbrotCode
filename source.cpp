@@ -29,7 +29,7 @@ using std::thread;
 typedef std::chrono::steady_clock the_clock;
 
 //Setting the number of threads to be used in the program.
-unsigned NUM_THREADS = 24;
+unsigned int NUM_THREADS = 0;
 
 const int WIDTH = 480;
 const int HEIGHT = 320;
@@ -46,6 +46,10 @@ uint32_t image[HEIGHT][WIDTH];
 int firstColour = 0;
 int secondColour = 0;
 
+int i = 0;
+int sectionSize = 0;
+int threadID = 0;
+int threadNumber = 0;
 
 // Write the image to a TGA file with the given name.
 // Format specification: http://www.gamers.org/dEngine/quake3/TGA.txt
@@ -91,9 +95,14 @@ void fileWriteThread(const char* filename)
 
 // Render the Mandelbrot set into the image array.
 // The parameters specify the region on the complex plane to plot.
-void compute_mandelbrot(double left, double right, double top, double bottom, unsigned y_start, unsigned y_stop)
+void compute_mandelbrot(double left, double right, double top, double bottom, int threadID)
 {
-	for (int y = y_start; y < y_stop; ++y)
+	sectionSize = HEIGHT / NUM_THREADS;
+
+	int y = threadID * sectionSize;
+	int y_stop = y + sectionSize;
+
+	for (y; y < y_stop; ++y)
 	{
 		for (int x = 0; x < WIDTH; ++x)
 		{
@@ -129,10 +138,13 @@ void compute_mandelbrot(double left, double right, double top, double bottom, un
 			}
 		}
 	}
+
+	return;
 }
 
 int main(int argc, char* argv[])
 {
+	
 	cout << "Please enter your first colour choice." << endl;
 	cout << "Enter 1 for red, 2 for yellow, 3 for orange." << endl;
 
@@ -163,8 +175,16 @@ int main(int argc, char* argv[])
 		break;
 	}
 
-	cout << "How many threads would you like to run concurrently? Your machine can run up to a maximum of: " << std::thread::hardware_concurrency() << endl;
+	cout << "How many threads would you like to run concurrently? Your machine can run up to a maximum of: " << std::thread::hardware_concurrency() << " threads." << endl;
 	std::cin >> NUM_THREADS;
+
+	while (NUM_THREADS > std::thread::hardware_concurrency())
+	{
+		cout << "Please enter a valid number of threads." << endl;
+		cout << "How many threads would you like to run concurrently? Your machine can run up to a maximum of: " << std::thread::hardware_concurrency() << " threads." << endl;
+
+		std::cin >> NUM_THREADS;
+	}
 
 	cout << "Please wait..." << endl;
 
@@ -174,13 +194,22 @@ int main(int argc, char* argv[])
 	the_clock::time_point start = the_clock::now();
 
 	// This shows the whole set.
-	for (int y = 0; y < HEIGHT; y += HEIGHT / NUM_THREADS)
-	{
+	//for (int y = 0; y < HEIGHT; y += HEIGHT / NUM_THREADS)
+	//{
 		//compute_mandelbrot(-2.0, 1.0, 1.125, -1.125, y, y + HEIGHT / thread);
 
 		// This zooms in on an interesting bit of detail.
-		compute_mandelbrot(-0.751085, -0.734975, 0.118378, 0.134488, y, y + HEIGHT / NUM_THREADS);
+	//	compute_mandelbrot(-0.751085, -0.734975, 0.118378, 0.134488, y, y + HEIGHT / NUM_THREADS);
 
+//	}
+
+	for (i = 0; i < NUM_THREADS; i++)
+	{
+		cout << "Creating thread: " << i << endl;
+		threadID = i;
+
+		compute_mandelbrot(-2.0, 1.0, 1.125, -1.125, threadID);
+		//th[i].compute_mandelbrot
 	}
 
 	thread writeToFile(fileWriteThread, "output.tga");
