@@ -31,8 +31,8 @@ typedef std::chrono::steady_clock the_clock;
 //Setting the number of threads to be used in the program.
 unsigned NUM_THREADS = 24;
 
-const int WIDTH = 1;
-const int HEIGHT = 1;
+const int WIDTH = 480;
+const int HEIGHT = 320;
 
 // The number of times to iterate before we assume that a point isn't in the
 // Mandelbrot set.
